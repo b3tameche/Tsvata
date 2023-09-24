@@ -1,0 +1,54 @@
+version: '2.4'
+
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - celery_worker
+  
+  alembic:
+    build:
+      context: ./backend
+    command: sh -c "python src/wait_for_db.py && alembic upgrade head"
+    depends_on:
+      db:
+        condition: service_started
+
+  celery_worker:
+    build:
+      context: ./backend
+    command: python src/scraper/worker.py
+    depends_on:
+      alembic:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      retries: 15
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fastapi
+    ports:
+      - "5432:5432"
+    # volumes:
+    #   - ./backend/scripts/init_db.sh:/docker-entrypoint-initdb.d/init_db.sh:ro
