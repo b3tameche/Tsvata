@@ -34,7 +34,7 @@ def scrape_job_urls():
 
     for each in cards:
         title = each.find('div', 'careers-results-item__job-title').text
-        url = each.find('a')['href']
+        url = list(map(lambda x: x['href'], filter(lambda x: x.text.strip() == "View", each.find_all('a'))))[0]
 
         response = req_ses.get(url)
         soup = BeautifulSoup(response.content, 'html.parser')

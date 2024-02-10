@@ -20,8 +20,11 @@ def scrape_job_urls():
     })
 
     for each in cards:
-        location = each.find('h4').text
+        location_tag = each.find('h4')
+        if location_tag is None:
+            continue
 
+        location = each.find('h4').text
         if location != 'Georgia':
             continue
 
